@@ -3,42 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SaveAnimals · Ficha de adopción</title>
-<meta name="description" content="Conoce a este animal y solicita su adopción o acogida en SaveAnimals, la app gratuita de protectoras de toda España.">
-<meta property="og:title" content="Busca hogar · SaveAnimals">
-<meta property="og:description" content="Ábrelo en la app gratuita SaveAnimals para conocerle y solicitar su adopción o acogida.">
-<style>
-  :root { --bg:#fff6f2; --tx:#16171b; --mu:#71737d; --pr:#ff6b4a; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#111215; --tx:#f3f3f5; --mu:#9a9ca6; } }
-  body { margin:0; background:var(--bg); color:var(--tx); font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-         min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; text-align:center; }
-  .card { max-width:420px; }
-  .logo { width:84px; height:84px; border-radius:22px; background:linear-gradient(135deg,#ff8a5b,#f0476e); display:flex; align-items:center; justify-content:center; margin:0 auto 18px; font-size:44px; }
-  h1 { font-size:26px; margin:0 0 8px; }
-  p { color:var(--mu); line-height:1.5; margin:0 0 22px; }
-  a.btn { display:block; background:var(--pr); color:#fff; text-decoration:none; font-weight:700; padding:16px; border-radius:16px; margin-bottom:12px; font-size:17px; }
-  a.sec { background:transparent; color:var(--pr); border:2px solid var(--pr); }
-  small { color:var(--mu); }
-</style>
+<title>Ficha de adopción · SaveAnimals</title>
+<meta name="description" content="Perros y gatos de protectoras verificadas de toda España. Gratis, sin comisiones y sin anuncios. Adopta o acoge con SaveAnimals.">
+<meta name="theme-color" content="#ff6b4a">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SaveAnimals">
+<meta property="og:title" content="SaveAnimals · Adopta y acoge">
+<meta property="og:description" content="Perros y gatos de protectoras verificadas de toda España. Gratis y sin ánimo de lucro.">
+<meta property="og:image" content="https://iherrero330.github.io/saveanimals/i-hero.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%BE%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"SaveAnimals","description":"Plataforma gratuita y sin ánimo de lucro para adoptar y acoger perros y gatos de protectoras verificadas en España.","email":"saveanimals.app@gmail.com"}</script>
 </head>
 <body>
-<div class="card">
-  <div class="logo">🐾</div>
-  <h1>Abriendo su ficha en SaveAnimals…</h1>
-  <p>Si tienes la app, se abrirá sola. Si no, descárgala gratis en Google Play para conocerle y solicitar su adopción o acogida. Todas las gestiones se hacen dentro de la app.</p>
-  <a class="btn" id="open" href="#">Abrir en la app</a>
-  <a class="btn sec" id="play" href="https://play.google.com/store/apps/details?id=com.saveanimals.app">Descargar gratis en Google Play</a>
-  <small>De momento SaveAnimals solo está disponible para Android.</small>
-</div>
-<script>
-  // Toma el identificador del animal (?a=...) y abre la app; si no está instalada, Android lleva a Google Play.
-  var id = (new URLSearchParams(location.search).get('a') || '').replace(/[^0-9a-fA-F-]/g, '').slice(0, 36);
-  var play = 'https://play.google.com/store/apps/details?id=com.saveanimals.app';
-  var intent = 'intent://animal/' + id + '#Intent;scheme=saveanimals;package=com.saveanimals.app;S.browser_fallback_url=' + encodeURIComponent(play) + ';end';
-  var openBtn = document.getElementById('open');
-  var android = /android/i.test(navigator.userAgent);
-  openBtn.href = android && id ? intent : play;
-  if (android && id) setTimeout(function () { location.href = intent; }, 300);
-</script>
+<header class="top"><div class="wrap">
+  <a class="brand" href="index.html"><span class="logo">🐾</span>SaveAnimals</a>
+  <nav id="nav"></nav>
+</div></header>
+<main class="wrap" id="app"><div class="spin">Cargando…</div></main>
+<footer><div class="wrap">
+  <div><a href="privacidad.html">Privacidad</a><a href="index.html#/creditos">Créditos de las fotos</a><a href="https://play.google.com/apps/testing/com.saveanimals.app">App (en pruebas en Google Play)</a><a href="mailto:saveanimals.app@gmail.com">Contacto</a></div>
+  <div>SaveAnimals es gratuita y sin ánimo de lucro. Solo actúa como intermediario entre personas y protectoras. Chat, solicitudes de adopción y cuestionarios se hacen en la app.</div>
+</div></footer>
+<script>window.SA_PAGE="animal";</script>
+<script src="app.js"></script>
 </body>
 </html>

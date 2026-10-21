@@ -12,7 +12,18 @@
   function $(s, r) { return (r || document).querySelector(s); }
   function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
   function toast(t) { var d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(function () { d.remove(); }, 3200); }
-  function safeImg(u) { return typeof u === 'string' && u.indexOf(SB + '/storage/v1/object/public/') === 0 ? u : ''; }
+  function safeImg(u) {
+    if (typeof u !== 'string') return '';
+    if (u.indexOf(SB + '/storage/v1/object/public/') === 0) return u;
+    if (/^asset:[a-z_]+$/.test(u)) return 'i-' + u.slice(6) + '.jpg';   // fotos de ejemplo incluidas en la web
+    return '';
+  }
+  var B = window.SA_PAGE ? 'index.html' : '';   // en animal.html los enlaces vuelven a index.html
+  function setMeta(title, desc, img) {
+    document.title = title;
+    var d = document.querySelector('meta[name=description]'); if (d) d.content = desc;
+    [['og:title', title], ['og:description', desc], ['og:image', img || '']].forEach(function (x) { var m = document.querySelector('meta[property="' + x[0] + '"]'); if (m && x[1]) m.content = x[1]; });
+  }
   function ageText(m) { m = m || 0; if (m < 12) return m + (m === 1 ? ' mes' : ' meses'); var y = Math.floor(m / 12), r = m % 12; return y + (y === 1 ? ' año' : ' años') + (r ? ' y ' + r + ' m' : ''); }
   var SIZES = ['Pequeño', 'Mediano', 'Grande'], ENERGY = ['', 'Tranquilo', 'Moderado', 'Muy activo'];
   var SEEK = {adopt: 'Adopción', foster_temp: 'Acogida temporal', foster_long: 'Acogida indefinida'};
@@ -55,9 +66,10 @@
   function isAdmin() { return !!(me && me.role === 'admin'); }
   function renderNav() {
     var h = location.hash || '#/';
-    function a(href, txt, cls) { return '<a href="' + href + '" class="' + (cls || '') + (h === href || (href !== '#/' && h.indexOf(href) === 0) ? ' on' : '') + '">' + txt + '</a>'; }
+    function a(href, txt, cls) { return '<a href="' + B + href + '" class="' + (cls || '') + (!window.SA_PAGE && (h === href || (href !== '#/' && h.indexOf(href) === 0)) ? ' on' : '') + '">' + txt + '</a>'; }
+    var br = $('.brand'); if (br) br.href = B + '#/';
     navEl.innerHTML = a('#/', 'Animales') + a('#/protectoras', 'Protectoras') +
-      (session ? (isAdmin() ? a('#/admin', 'Administración') : '') + a('#/panel', 'Mi panel', 'cta') + '<a href="#/salir">Salir</a>' : a('#/entrar', 'Soy protectora', 'cta'));
+      (session ? (isAdmin() ? a('#/admin', 'Administración') : '') + a('#/panel', 'Mi panel', 'cta') + '<a href="' + B + '#/salir">Salir</a>' : a('#/entrar', 'Soy protectora', 'cta'));
   }
   function route() { ensureMe().then(route2); }
   function route2() {
@@ -66,7 +78,9 @@
     var h = (location.hash || '#/').slice(1), p = h.split('/').filter(Boolean);
     if (p[0] === 'admin') { if (!isAdmin()) { location.hash = '#/'; return; } return viewAdmin(p[1] || 'protectoras'); }
     if (p[0] === 'panel' && p[1] === 'perfil' && session) return viewProfile();
-    if (p[0] === 'animal' && p[1]) return viewPet(p[1]);
+    if (window.SA_PAGE === 'animal') { var qa = (new URLSearchParams(location.search).get('a') || '').replace(/[^0-9a-fA-F-]/g, '').slice(0, 36); return viewPet(qa); }
+    if (p[0] === 'animal' && p[1]) { location.replace('animal.html?a=' + encodeURIComponent(p[1])); return; }
+    if (p[0] === 'creditos') return viewCredits();
     if (p[0] === 'protectoras') return viewShelters();
     if (p[0] === 'protectora' && p[1]) return viewShelter(p[1]);
     if (p[0] === 'entrar') return viewLogin();
@@ -86,20 +100,35 @@
   function petCard(p) {
     var img = safeImg((p.photos || [])[0]);
     var sh = p.shelters || {};
-    return '<a class="pet" href="#/animal/' + esc(p.id) + '"><div class="ph" style="' + (img ? 'background-image:url(' + esc(img) + ')' : '') + '">' +
+    return '<a class="pet" href="animal.html?a=' + esc(p.id) + '"><div class="ph" style="' + (img ? 'background-image:url(' + esc(img) + ')' : '') + '">' +
       (img ? '' : '<div class="emo">' + (p.species === 1 ? '🐱' : '🐶') + '</div>') +
       (p.urgent ? '<span class="tag">Urgente</span>' : p.status === 'reserved' ? '<span class="tag r">Reservado</span>' : '') + '</div>' +
       '<div class="b"><div class="n">' + esc(p.name) + '</div><div class="m">' + (p.species === 1 ? 'Gato' : 'Perro') + ' · ' + esc(p.breed) + ' · ' + ageText(p.age_months) + '</div>' +
       '<div class="m">📍 ' + esc(sh.city || '') + (sh.name ? ' · ' + esc(sh.name) : '') + '</div></div></a>';
   }
   function viewHome() {
-    app.innerHTML = '<section class="hero"><h1>Encuentra a tu nuevo mejor amigo</h1><p>Perros y gatos de protectoras verificadas de toda España. Gratis, sin comisiones y sin anuncios.</p></section>' +
+    setMeta('SaveAnimals · Adopta y acoge perros y gatos de protectoras verificadas', 'Perros y gatos de protectoras verificadas de toda España. Gratis, sin comisiones y sin anuncios. Adopta o acoge con SaveAnimals.');
+    app.innerHTML = '<section class="hero2"><div class="copy"><span class="eyebrow">🐾 Gratis · Sin ánimo de lucro</span>' +
+      '<h1>Cada animal merece <em>un hogar</em></h1>' +
+      '<p>Perros y gatos de protectoras verificadas de toda España. Sin comisiones, sin anuncios y con todo el cariño del mundo.</p>' +
+      '<div class="cta"><button class="btn pr" data-go="catalogo">Ver animales</button><a class="btn" href="' + PLAY + '">Descargar la app</a></div>' +
+      '<div class="trust"><div><b id="s1">–</b><span>animales buscan hogar</span></div><div><b id="s2">–</b><span>protectoras verificadas</span></div><div><b id="s3">–</b><span>ya encontraron familia</span></div></div></div>' +
+      '<div class="heroimg"><img src="i-hero.jpg" alt="Un perro y un gato descansando juntos en el sofá"><div class="float f1">✅ Protectoras verificadas</div><div class="float f2">💛 0 € de comisión</div></div></section>' +
+      '<section class="how"><h2 class="sec">Así de fácil</h2><div class="steps">' +
+      '<div class="step"><i>1</i><b>Encuentra</b><p>Filtra por especie, tamaño o ciudad y conoce su historia.</p></div>' +
+      '<div class="step"><i>2</i><b>Solicita</b><p>Rellena el cuestionario de la protectora desde la app.</p></div>' +
+      '<div class="step"><i>3</i><b>Habla con ella</b><p>Chat directo y seguro con la protectora, sin intermediarios.</p></div>' +
+      '<div class="step"><i>4</i><b>Dale un hogar</b><p>Adopta o acoge. Tu nuevo mejor amigo te espera.</p></div></div></section>' +
+      '<section id="catalogo"><h2 class="sec">Animales que buscan hogar</h2>' +
       '<div class="chips" id="fs">' + chip('species', '', 'Todos') + chip('species', '0', '🐶 Perros') + chip('species', '1', '🐱 Gatos') + '</div>' +
       '<div class="chips" id="fz">' + chip('size', '', 'Cualquier tamaño') + chip('size', '0', 'Pequeño') + chip('size', '1', 'Mediano') + chip('size', '2', 'Grande') + '</div>' +
       '<div class="field" style="max-width:420px;margin:0 auto"><input type="text" id="q" placeholder="Buscar por nombre, raza o ciudad" value="' + esc(filt.q) + '"></div>' +
-      '<div class="grid" id="grid"><div class="spin">Cargando animales…</div></div>';
-    $$('.chip', app).forEach(function (c) { c.onclick = function () { filt[c.dataset.k] = c.dataset.v; viewHome(); }; });
+      '<div class="grid" id="grid"><div class="spin">Cargando animales…</div></div></section>' +
+      '<section class="band"><div><h2>¿Eres una protectora?</h2><p>Publica a tus animales gratis, con fotos, desde la web o la app. Lo que subas aparece al instante en los dos sitios. Chat y solicitudes de adopción, en la app.</p></div><div class="cta"><a class="btn pr" href="#/entrar">Entrar a mi panel</a><a class="btn" href="#/protectoras">Ver protectoras</a></div></section>';
+    $$('[data-go]', app).forEach(function (b) { b.onclick = function () { document.getElementById(b.dataset.go).scrollIntoView({behavior: 'smooth'}); }; });
+    $$('.chip', app).forEach(function (c) { c.onclick = function () { filt[c.dataset.k] = c.dataset.v; var y = window.scrollY; viewHome(); window.scrollTo(0, y); }; });
     $('#q').oninput = function (e) { filt.q = e.target.value; draw(); };
+    Promise.all([count('pets', 'status=neq.adopted'), count('shelters', 'status=eq.approved'), count('pets', 'status=eq.adopted')]).then(function (c) { ['s1', 's2', 's3'].forEach(function (id, i) { var el = document.getElementById(id); if (el) el.textContent = c[i]; }); }).catch(function () {});
     var all = null;
     function draw() {
       var q = filt.q.trim().toLowerCase();
@@ -117,8 +146,10 @@
   function viewPet(id) {
     app.innerHTML = '<div class="spin">Cargando…</div>';
     sb('GET', '/rest/v1/pets?select=*,shelters(*)&id=eq.' + encodeURIComponent(id)).then(function (r) {
-      var p = r && r[0]; if (!p) { app.innerHTML = '<div class="spin">No encontramos este animal.</div>'; return; }
+      var p = r && r[0]; if (!p) { app.innerHTML = '<div class="spin">No encontramos este animal. <a href="' + (B || 'index.html') + '#/">Ver todos</a></div>'; return; }
       var sh = p.shelters || {}, imgs = (p.photos || []).map(safeImg).filter(Boolean);
+      var kind = p.species === 1 ? 'Gato' : 'Perro';
+      setMeta(p.name + ' · ' + kind + ' en adopción en ' + (sh.city || 'España') + ' | SaveAnimals', (p.story || (p.name + ' busca hogar.')).slice(0, 155), imgs[0] ? new URL(imgs[0], location.href).href : '');
       var intent = 'intent://animal/' + encodeURIComponent(p.id) + '#Intent;scheme=saveanimals;package=com.saveanimals.app;S.browser_fallback_url=' + encodeURIComponent(PLAY) + ';end';
       var android = /android/i.test(navigator.userAgent);
       var pills = [];
@@ -127,18 +158,28 @@
       if (p.kids) pills.push('<span class="pill b">Bien con niños</span>'); if (p.dogs) pills.push('<span class="pill b">Bien con perros</span>'); if (p.cats) pills.push('<span class="pill b">Bien con gatos</span>');
       (p.traits || []).forEach(function (t) { pills.push('<span class="pill o">' + esc(t) + '</span>'); });
       var seek = (p.seeking || ['adopt']).map(function (s) { return '<span class="pill p">' + esc(SEEK[s] || s) + '</span>'; }).join('');
-      app.innerHTML = '<p><a href="#/" class="muted">← Volver</a></p><div class="two"><div>' +
-        (imgs.length ? '<div class="gallery">' + imgs.map(function (u) { return '<img src="' + esc(u) + '" alt="' + esc(p.name) + '" loading="lazy">'; }).join('') + '</div>'
-          : '<div class="card center" style="font-size:90px;padding:60px 0">' + (p.species === 1 ? '🐱' : '🐶') + '</div>') +
-        '</div><div><h1>' + esc(p.name) + '</h1><p class="muted">' + (p.species === 1 ? 'Gato' : 'Perro') + ' · ' + esc(p.breed) + ' · ' + (p.female ? 'Hembra' : 'Macho') + ' · ' + ageText(p.age_months) + ' · ' + SIZES[p.size] + (p.weight_kg ? ' · ' + p.weight_kg + ' kg' : '') + '</p>' +
+      function fact(k, v) { return '<div class="fact"><span>' + k + '</span><b>' + esc(v) + '</b></div>'; }
+      var main = imgs.length ? '<img id="mainph" class="mainph" src="' + esc(imgs[0]) + '" alt="' + esc(p.name) + ', ' + kind.toLowerCase() + ' en adopción">' : '<div class="mainph emoph">' + (p.species === 1 ? '🐱' : '🐶') + '</div>';
+      var thumbs = imgs.length > 1 ? '<div class="thumbs">' + imgs.map(function (u, i) { return '<img src="' + esc(u) + '" data-u="' + esc(u) + '" class="' + (i ? '' : 'on') + '" alt="Foto ' + (i + 1) + '">'; }).join('') + '</div>' : '';
+      app.innerHTML = '<p><a href="' + B + '#/" class="muted">← Todos los animales</a></p><div class="two"><div class="galw">' + main + thumbs + '</div><div class="info"><h1>' + esc(p.name) + '</h1>' +
+        '<p class="muted lead">' + kind + ' · ' + esc(p.breed) + ' · ' + (p.female ? 'Hembra' : 'Macho') + '</p>' +
         '<div>' + seek + (p.urgent ? '<span class="pill p">Urgente</span>' : '') + (p.status === 'reserved' ? '<span class="pill y">Reservado</span>' : '') + '</div>' +
-        '<p>' + esc(p.story).replace(/\n/g, '<br>') + '</p><div>' + pills.join('') + '</div>' +
-        '<p class="muted">Energía: ' + esc(ENERGY[p.energy] || '') + (p.fee ? ' · Aportación para gastos: ' + p.fee + ' €' : '') + '</p>' +
-        '<a class="card" style="margin:16px 0;display:block;text-decoration:none" href="#/protectora/' + esc(p.shelter_id) + '"><b>' + esc(sh.name || '') + '</b><div class="muted">📍 ' + esc(sh.city || '') + ' · Ver perfil de la protectora</div></a>' +
-        '<a class="btn pr" style="width:100%" href="' + (android ? intent : PLAY) + '">Solicitar en la app</a>' +
-        '<p class="muted" style="font-size:14.5px">La app está en fase de pruebas en Google Play: si el enlace no abre, aún no estás en la lista de probadores (pídenos acceso en saveanimals.app@gmail.com). Para adoptar o acoger, rellenar el cuestionario y hablar con la protectora usa la app SaveAnimals (gratis). Así es todo más seguro para el animal y para ti.</p>' +
+        '<div class="facts">' + fact('Edad', ageText(p.age_months)) + fact('Tamaño', SIZES[p.size] || '') + fact('Peso', p.weight_kg ? p.weight_kg + ' kg' : '—') + fact('Energía', ENERGY[p.energy] || '') + (p.fee ? fact('Aportación', p.fee + ' €') : '') + '</div>' +
+        '<h3 style="margin-top:20px">Su historia</h3><p>' + esc(p.story).replace(/\n/g, '<br>') + '</p><div>' + pills.join('') + '</div>' +
+        '<a class="card shl" href="' + B + '#/protectora/' + esc(p.shelter_id) + '"><span class="ic">🏠</span><div><b>' + esc(sh.name || '') + '</b><div class="muted">📍 ' + esc(sh.city || '') + ' · Ver perfil de la protectora</div></div></a>' +
+        '<div class="cta2"><a class="btn pr" href="' + (android ? intent : PLAY) + '">Solicitar en la app</a><button class="btn" id="share">Compartir</button></div>' +
+        '<p class="muted sm">La app está en fase de pruebas en Google Play: si el enlace no abre, aún no estás en la lista de probadores (pídenos acceso en saveanimals.app@gmail.com). Adoptar o acoger, el cuestionario y el chat con la protectora se hacen en la app, de forma segura.</p>' +
         '</div></div>';
+      $$('.thumbs img', app).forEach(function (t) { t.onclick = function () { $('#mainph').src = t.dataset.u; $$('.thumbs img', app).forEach(function (x) { x.classList.remove('on'); }); t.classList.add('on'); }; });
+      $('#share').onclick = function () { var u = location.href; if (navigator.share) navigator.share({title: p.name + ' busca hogar', url: u}).catch(function () {}); else if (navigator.clipboard) navigator.clipboard.writeText(u).then(function () { toast('Enlace copiado'); }); };
     }).catch(function (e) { app.innerHTML = '<div class="spin">Error: ' + esc(e.message) + '</div>'; });
+  }
+
+  function viewCredits() {
+    app.innerHTML = '<section class="hero" style="padding-top:8px"><h1>Créditos de las fotos</h1><p>Las fotos de ejemplo proceden de Wikimedia Commons y se usan bajo sus licencias.</p></section><div class="card" style="margin-bottom:40px"><table class="list" id="cr"><tr><td class="spin">Cargando…</td></tr></table></div>';
+    fetch('credits.json').then(function (r) { return r.json(); }).then(function (l) {
+      $('#cr').innerHTML = l.map(function (c) { return '<tr><td><b>' + esc(c.title) + '</b><div class="muted">' + esc(c.artist) + ' · ' + esc(c.license) + '</div></td><td style="text-align:right"><a href="' + esc(/^https:\/\/commons\.wikimedia\.org\//.test(c.page) ? c.page : '#') + '" target="_blank" rel="noopener">Origen</a></td></tr>'; }).join('');
+    }).catch(function () { $('#cr').innerHTML = '<tr><td class="muted">No se pudieron cargar.</td></tr>'; });
   }
 
   function viewShelters() {
@@ -347,7 +388,7 @@
   // ---------------------------------------------------------------- administración
   function count(table, filter) {
     return ensureFresh().then(function () {
-      return fetch(SB + '/rest/v1/' + table + '?select=*' + (filter ? '&' + filter : ''), {method: 'HEAD', headers: {apikey: KEY, Authorization: 'Bearer ' + session.access_token, Prefer: 'count=exact'}});
+      return fetch(SB + '/rest/v1/' + table + '?select=*' + (filter ? '&' + filter : ''), {method: 'HEAD', headers: {apikey: KEY, Authorization: 'Bearer ' + ((session && session.access_token) || KEY), Prefer: 'count=exact'}});
     }).then(function (r) { var c = r.headers.get('content-range') || ''; return parseInt(c.split('/')[1], 10) || 0; });
   }
   var ADM_TABS = [['protectoras', 'Protectoras'], ['animales', 'Animales'], ['usuarios', 'Usuarios'], ['sugerencias', 'Sugerencias'], ['perdidos', 'Perdidos'], ['ajustes', 'Ajustes'], ['resumen', 'Resumen']];
