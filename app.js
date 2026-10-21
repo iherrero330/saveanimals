@@ -3,7 +3,7 @@
   'use strict';
   var SB = 'https://fzvmqelihrfflrnwjgal.supabase.co';
   var KEY = 'sb_publishable_g0bCY8xNsRYv8Yn58f4TfA_1f742706';
-  var PLAY = 'https://play.google.com/store/apps/details?id=com.saveanimals.app';
+  var PLAY = 'https://play.google.com/apps/testing/com.saveanimals.app';
   var app = document.getElementById('app'), navEl = document.getElementById('nav');
   var session = null;
 
@@ -136,7 +136,7 @@
         '<p class="muted">Energía: ' + esc(ENERGY[p.energy] || '') + (p.fee ? ' · Aportación para gastos: ' + p.fee + ' €' : '') + '</p>' +
         '<a class="card" style="margin:16px 0;display:block;text-decoration:none" href="#/protectora/' + esc(p.shelter_id) + '"><b>' + esc(sh.name || '') + '</b><div class="muted">📍 ' + esc(sh.city || '') + ' · Ver perfil de la protectora</div></a>' +
         '<a class="btn pr" style="width:100%" href="' + (android ? intent : PLAY) + '">Solicitar en la app</a>' +
-        '<p class="muted" style="font-size:14.5px">Para adoptar o acoger, rellenar el cuestionario y hablar con la protectora usa la app SaveAnimals (gratis). Así es todo más seguro para el animal y para ti.</p>' +
+        '<p class="muted" style="font-size:14.5px">La app está en fase de pruebas en Google Play: si el enlace no abre, aún no estás en la lista de probadores (pídenos acceso en saveanimals.app@gmail.com). Para adoptar o acoger, rellenar el cuestionario y hablar con la protectora usa la app SaveAnimals (gratis). Así es todo más seguro para el animal y para ti.</p>' +
         '</div></div>';
     }).catch(function (e) { app.innerHTML = '<div class="spin">Error: ' + esc(e.message) + '</div>'; });
   }
